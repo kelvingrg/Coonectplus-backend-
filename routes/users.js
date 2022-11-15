@@ -1,6 +1,11 @@
 var express = require('express');
 var router = express.Router();
-const userController = require('../controllers/userConroller')
+const {doSignup,
+    doLogin,
+    userBasicDetailsUpdate,
+    changeProfileDp,
+
+} = require('../controllers/userConroller')
 
 /* GET home page. */
 router.get('/', function (req, res, next) {
@@ -8,37 +13,17 @@ router.get('/', function (req, res, next) {
 });
 
 // signup input 
-router.post('/signup', (req, res) => {
-    try {
-        userController.doSignup(req.body).then((response) => {
-            res.json(response)
-        }).catch((err) => {
-            console.log(err);
-            res.json({loadError:true,err})
-        })
-
-    } 
-    catch (err) {
-        res.json({loadError:true,err})
-    }
-  });
+router.post('/signup', doSignup);
 
 // user login router 
-router.post('/login', (req, res) => {
-    try {
-        console.log("reached at backend", req.body,req.header)
-        userController.doLogin(req.body).then((response) => {
+router.post('/login',doLogin );
 
-            res.status(200).json(response)
-        }).catch((err) => {
-            console.log(err);
-            res.json({loadError:true})
-        })
+router.post('/userBasicDetailsUpdate', userBasicDetailsUpdate);
 
-    } 
-    catch (err) {
-        res.json({loadError:true,err})
-    }
-  });
+router.post('/changeProfileDp', changeProfileDp)
 
-module.exports = router;
+router.get('/testrouter',(req, res, next)=>{
+    console.log("reached inside the testRouter");
+} )
+
+module.exports = router;         

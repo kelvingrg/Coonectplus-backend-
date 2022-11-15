@@ -6,7 +6,12 @@ const userSchema=mongoose.Schema(
             email:String,
             mobileNumber:Number,
             password:String,
-            timeStamp:Date
+            timeStamp:Date,
+            keyrole:{},
+            currentCompanyName:String,
+            currentDesignation:String,
+            dp:String,
+
         });
         const users=   mongoose.model('users', userSchema); 
 
