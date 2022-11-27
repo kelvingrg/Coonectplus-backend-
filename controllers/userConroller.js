@@ -306,6 +306,8 @@ const updateLike =(req,res)=>{
 //     postId: '6376944df7012f1fdbf8cd1d'
 //   }
 
+try{
+
 
 
               POSTS.findOneAndUpdate(
@@ -325,6 +327,12 @@ const updateLike =(req,res)=>{
         
           res.json({loadError:true, message:error}); 
               })
+              
+}
+catch(error){
+  console.log(error);
+        res.json({loadError:true,message:"Some thing went wrong please try again "})
+}
 
 }
 
@@ -599,10 +607,192 @@ res.json({loadError:true,message:"Some thing went wrong please try again "})
 }
 
 }
+const ownJobPostData =(req,res)=>{
+  try{
+  console.log(req.body,req.query ,"reqched inside ownjob dataa ");
+  JOB_POST.find({userId:req.query.userId}).sort({timeStamp:-1})
+  .then((response)=>{
+    console.log(response)
+    res.status(200).json({dataFetched:true,data:response});})
+  .catch((error) => {
+    console.log(error)
+    res.json({loadError:true, message:error});
+  });
+}
+catch(error){
+  console.log(error);
+  res.json({loadError:true,message:"Some thing went wrong please try again "})
+}
+}
+
+const deleteTheJobPost=(req,res)=>{
+console.log(req.query);
+  try{
+JOB_POST.findOneAndDelete({_id:req.query.postId})
+.then((response)=>{
+  console.log(response)
+  res.status(200).json({removePost:true});})
+.catch((error) => {
+  console.log(error)
+  res.json({loadError:true, message:error});
+});
+  }
+  catch(error){
+    console.log(error);
+    res.json({loadError:true,message:"Some thing went wrong please try again "})
+  }
+}
 
 
+const updateSingleJobPostData=(req,res)=>{
+  console.log(req.query,"req.query t updaTE JOB POST ")
+try{
+  if(req.query.logoChange==="true"){
+    const storage = multer.diskStorage({
+      destination: path.join(__dirname, '../public/JobPosts',"CompanyLogo"),
+      filename: (req, file, cb) => {
+        cb(null, Date.now() + '-' +file.originalname);
+      },
+    });
+
+    const upload = multer({ storage: storage }).single('image');
+
+    upload(req, res, (err) => {
+      JOB_POST.findByIdAndUpdate({_id: req.query.postId},{$set:{
+        companyName: req?.query?.companyName ,
+        designation:req?.query?. designation ,
+        workLocation : req?.query?.workLocation ,
+        workType :req?.query?.workType ,
+        workMode:req?.query?.workMode ,
+        minSalary :req?.query?. minSalary ,
+        maxSalary:req?.query?. maxSalary  ,
+        overView :req?.query?. overView  ,
+        jd:req.query?. jd ,
+        authorisationReq:req?.query?.authorisationReq,
+        userId:req?.query?.userId,
+        companyLogo:req?.file?.filename,
+
+      }})
+      .then((response)=>{
+        console.log(response);
+        res.status(200).json({update:true})
+      }).catch((error)=>{
+             console.log(error)  
+        res.json({loadError:true, message:error+"1"});
+      
+          })
+      
+  })
+  }
+  else{
+
+    JOB_POST.findByIdAndUpdate({_id: req.query.postId},{$set:{
+      companyName: req?.query?.companyName ,
+      designation:req?.query?. designation ,
+      workLocation : req?.query?.workLocation ,
+      workType :req?.query?.workType ,
+      workMode:req?.query?.workMode ,
+      minSalary :req?.query?. minSalary ,
+      maxSalary:req?.query?. maxSalary  ,
+      overView :req?.query?. overView  ,
+      jd:req.query?. jd ,
+      authorisationReq:req?.query?.authorisationReq,
+      userId:req?.query?.userId,
+   
+
+    }})
+    .then((response)=>{
+      console.log(response);
+      res.status(200).json({update:true})
+    }).catch((error)=>{
+           console.log(error)  
+      res.json({loadError:true, message:error+"1"});
+    
+        })
+  }
 
 
+}
+catch(error){
+  console.log(error);
+        res.json({loadError:true,message:"Some thing went wrong please try again "})
+}
+}
+const getDataForDetailedJobPostView=(req,res)=>{
+
+  // data in query 
+  //{ postId: '6381bbed892f79e489bd8f93' }
+  console.log(req.query,"reached inside getDataForDetailedJobPostView fn ");
+  try{
+  JOB_POST.findById(req.query.postId)
+  .then((response)=>{
+    res.status(200).json({dataFetched:true, response})
+  }).catch((error)=>{
+         console.log(error)  
+    res.json({loadError:true, message:error});
+  
+      })
+}
+catch(error){
+  console.log(error);
+        res.json({loadError:true,message:"Some thing went wrong please try again "})
+}
+
+}
+const applyForAJob= async (req,res )=>{
+
+// data passed
+// {
+//   userId: '63690c00b7157f1186735aa7',
+//   jobPostId: '6381c4e1892f79e489bd8fb1'
+// } 
+try{
+  const jobApplication={
+    userId:req.body.userId,
+    timeStamp:(new Date()).setSeconds(0)
+  }
+  JOB_POST.updateOne({_id:req.body.jobPostId},{$addToSet:{appliedCandidates:jobApplication}},{new:true},(err)=>{console.log(err)}).clone()
+  .then((response)=>{
+    res.status(200).json({jobApply:true})
+  }).catch((error)=>{
+         console.log(error)  
+    res.json({loadError:true, message:error});
+  
+      })
+
+}
+catch(error){
+  console.log(error);
+        res.json({loadError:true,message:"Some thing went wrong please try again "})
+}
+
+}
+const getCandidateDataOfJobApplied=(req,res)=>{
+  console.log(req.query,"fdata at getCandidateDataOfJobApplied")
+  // sample data input
+  // { postId: '638103cacde597280f1806f8' } 
+  try{
+JOB_POST.findById(req.query.postId)
+.populate({
+  path: 'appliedCandidates',
+  populate: {
+      path: 'userId' 
+  }
+})
+.then((response)=>{
+  res.status(200).json({dataFetched:true,response})
+}).catch((error)=>{
+       console.log(error)  
+  res.json({loadError:true, message:error});
+
+    })
+
+  }
+  catch(error){
+    console.log(error);
+          res.json({loadError:true,message:"Some thing went wrong please try again "})
+  }
+}
 
 
 
@@ -627,6 +817,12 @@ module.exports = {
     changePassword,
     addNewJobPost,
     jobPostData,
+    ownJobPostData,
+    deleteTheJobPost,
+    updateSingleJobPostData,
+    getDataForDetailedJobPostView,
+    applyForAJob,
+    getCandidateDataOfJobApplied
 
 
 

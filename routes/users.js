@@ -21,6 +21,12 @@ const {doSignup,
     changePassword,
     addNewJobPost,
     jobPostData,
+    ownJobPostData,
+    deleteTheJobPost,
+    updateSingleJobPostData,
+    getDataForDetailedJobPostView,
+    applyForAJob,
+    getCandidateDataOfJobApplied,
 
     
 
@@ -68,7 +74,20 @@ router.get('/verificationCodeforForgotPassword',verificationCodeforForgotPasswor
 router.post('/changePassword',changePassword)
 
 router.post('/addNewJobPost',verifyToken,addNewJobPost)
+
 router.get('/jobPostData',verifyToken,jobPostData)
+
+router.get('/ownJobPostData',verifyToken,ownJobPostData)
+
+router.get('/deleteTheJobPost',verifyToken,deleteTheJobPost)
+
+router.post('/updateSingleJobPostData',verifyToken,updateSingleJobPostData)
+
+router.get('/getDataForDetailedJobPostView',verifyToken,getDataForDetailedJobPostView)
+
+router.post('/applyForAJob',verifyToken,applyForAJob)
+
+router.get('/getCandidateDataOfJobApplied',verifyToken,getCandidateDataOfJobApplied)
 
 
 // router.get('/testrouter',(req, res, next)=>{UserAboutSessionUpdate

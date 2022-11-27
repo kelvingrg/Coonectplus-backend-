@@ -84,10 +84,13 @@ const userSchema=mongoose.Schema(
                                 timeStamp:Date,
                                 authorised:Boolean,
                                 appliedCandidates:[
-                                   { candidateId:{
+                                 { userId: {
                                         type: mongoose.Schema.Types.ObjectId,
                                         ref: "users"
-                                               },}
+                                              },
+                                  
+                                    timeStamp:Date,          
+                                  }
                                 ]
                         
                                 });
