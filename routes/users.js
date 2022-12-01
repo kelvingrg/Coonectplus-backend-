@@ -27,6 +27,12 @@ const {doSignup,
     getDataForDetailedJobPostView,
     applyForAJob,
     getCandidateDataOfJobApplied,
+    getUserData,
+    getConnectionSuggestionData,
+    getConnectionRequestData,
+    sendConnectionReq,
+    acceptConnectionReq,
+    declineConnectionReq,
 
     
 
@@ -89,9 +95,21 @@ router.post('/applyForAJob',verifyToken,applyForAJob)
 
 router.get('/getCandidateDataOfJobApplied',verifyToken,getCandidateDataOfJobApplied)
 
+router.post('/getUserData',verifyToken,getUserData)
+
+router.get('/getConnectionSuggestionData',verifyToken,getConnectionSuggestionData)
+
+router.get('/getConnectionRequestData',verifyToken ,getConnectionRequestData)
+
+router.post('/sendConnectionReq',verifyToken,sendConnectionReq)
+
+router.post('/acceptConnectionReq',verifyToken,acceptConnectionReq)
+
+router.post('/declineConnectionReq',verifyToken,declineConnectionReq)
+
 
 // router.get('/testrouter',(req, res, next)=>{UserAboutSessionUpdate
 //     console.log("reached inside the testRouter");           
 // } )
-
+ 
 module.exports = router;         

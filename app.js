@@ -10,6 +10,9 @@ var cors = require('cors')
 var app = express();
 require('dotenv').config(); 
 
+
+
+
 const connection = mongoose.connect(config.database, {
   useNewUrlParser: true, useUnifiedTopology: true });
 if(connection){
@@ -23,6 +26,8 @@ console.log("database connection error");
 
 var userRouter = require('./routes/users');
 var adminRouter = require('./routes/admin');
+var chatRouter=require('./routes/chatRoute')
+var messageRouter=require('./routes/messageRoute')
 
 
 app.use(cors())
@@ -38,6 +43,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', userRouter);
 app.use('/admin', adminRouter);
+app.use('/chat', chatRouter);
+app.use('/message', messageRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

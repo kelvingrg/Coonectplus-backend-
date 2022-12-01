@@ -12,6 +12,7 @@ const path = require("path");
 const moment= require('moment'); 
 const nodemailer = require('nodemailer');
 const { timeStamp } = require('console');
+var objectId = require("mongodb").ObjectId;
 
 
 
@@ -81,6 +82,7 @@ const doLogin = (req, res) => {
                     console.log("success");
 
                     console.log("inside success");
+                    userData.password=null
                     res.status(200).json({login: true, userData, token: token})
 
 
@@ -201,7 +203,7 @@ const changeProfileDp = (req,res)=>{
     .then(async(response)=>{
       const userdata= await USERS.find({_id:req.query.userId})
    
-        res.status(200).json({upload:true,userData:userdata[0],message:"about content successfully done"})})
+        res.status(200).json({upload:true,userData:userdata,message:"about content successfully done"})})
     .catch((error)=>{
         res.status(500).json({loadError:true,error:err})
     })
@@ -216,7 +218,7 @@ const userExperienceUpdate =(req,res)=>{
         USERS.findByIdAndUpdate({_id:req.query.userId},{experience:req.body},{upsert:true})
         .then(async(response)=>{
             const userdata= await USERS.find({_id:req.query.userId})
-              res.status(200).json({upload:true,userData:userdata[0],message:"experinece content successfully done"})})
+              res.status(200).json({upload:true,userData:userdata,message:"experinece content successfully done"})})
           .catch((error)=>{
               res.status(500).json({loadError:true,error:err})
           })
@@ -233,7 +235,7 @@ const userSkillUpdate=(req,res)=>{
         USERS.findByIdAndUpdate({_id:req.query.userId},{skills:req.body},{upsert:true})
         .then(async(response)=>{
             const userdata= await USERS.find({_id:req.query.userId})
-              res.status(200).json({upload:true,userData:userdata[0],message:"skills content successfully done"})})
+              res.status(200).json({upload:true,userData:userdata,message:"skills content successfully done"})})
           .catch((error)=>{
               res.status(500).json({loadError:true,error:err})
           })
@@ -722,7 +724,7 @@ const getDataForDetailedJobPostView=(req,res)=>{
 
   // data in query 
   //{ postId: '6381bbed892f79e489bd8f93' }
-  console.log(req.query,"reached inside getDataForDetailedJobPostView fn ");
+
   try{
   JOB_POST.findById(req.query.postId)
   .then((response)=>{
@@ -768,7 +770,7 @@ catch(error){
 
 }
 const getCandidateDataOfJobApplied=(req,res)=>{
-  console.log(req.query,"fdata at getCandidateDataOfJobApplied")
+
   // sample data input
   // { postId: '638103cacde597280f1806f8' } 
   try{
@@ -777,7 +779,7 @@ JOB_POST.findById(req.query.postId)
   path: 'appliedCandidates',
   populate: {
       path: 'userId' 
-  }
+  },
 })
 .then((response)=>{
   res.status(200).json({dataFetched:true,response})
@@ -793,9 +795,166 @@ JOB_POST.findById(req.query.postId)
           res.json({loadError:true,message:"Some thing went wrong please try again "})
   }
 }
+const getUserData=(req,res)=>{
+  try{
+
+  USERS.find({_id:req.body.userId},'-password')
+  .then((response)=>{
+    res.status(200).json({dataFetched:true,response})
+  }).catch((error)=>{
+         console.log(error)  
+    res.json({loadError:true, message:error});
+  
+      })
+  
+    }
+    catch(error){
+      console.log(error);
+            res.json({loadError:true,message:"Some thing went wrong please try again "})
+    }
+  }
+const getConnectionSuggestionData=(req,res)=>{
+try{              
+console.log(req.query,"rehewd inside get userss data ")
+
+USERS.aggregate([
+{
+  $match:{_id: objectId(req.query?.userId)}
+},
+{
+  $project:{ conectionReq:'$connectionReq.userId',connections:"$connections.userId",_id:0,connectionReqSend:"$connectionReqSend.userId"}
+},
+{
+  $project:{selectedId:{ $concatArrays: [ "$conectionReq", "$connections","$connectionReqSend",[ objectId(req.query.userId)] ] }}
+}
 
 
+])
 
+.then(async (response)=>{
+  console.log(response,"reponse after aggragrate in con siugg datta");
+availableUser=[... new Set(response[0].selectedId)]   // here deleting duplivcate elements 
+
+USERS.find({_id:{$nin:availableUser}},"_id userName currentDesignation keyrole dp ").clone() 
+.then((response)=>{
+  res.status(200).json({dataFetched:true,response})
+}).catch((error)=>{
+       console.log(error)  
+  res.json({loadError:true, message:error});
+
+    })             
+})
+
+}
+catch(error){
+  console.log(error);
+       res.json({loadError:true,message:"Some thing went wrong please try again "})
+}
+}
+
+const getConnectionRequestData =(req,res)=>{
+///  console.log(req.query,"inside an connection req data ");
+try{
+USERS.find({_id:req.query.userId},'').populate({
+  path:'connectionReq',
+  populate:{
+    path:'userId',
+    select:[ '_id', 'userName','currentDesignation','keyrole' ,'dp '],
+  }
+} )
+.then((response)=>{
+  console.log("inside  get connection reeq data ",response[0].connectionReq);
+  res.status(200).json({dataFetched:true,data:response[0].connectionReq})
+}).catch((error)=>{
+       console.log(error)  
+  res.json({loadError:true, message:error});
+
+    })      
+  }
+  catch(error){
+    console.log(error);
+         res.json({loadError:true,message:"Some thing went wrong please try again "})
+  }
+
+
+}
+
+const sendConnectionReq = (req,res)=>{
+  console.log(req.body);
+try{
+
+  USERS.findOneAndUpdate({_id:req.body.reqUserId},{$push:{connectionReq:{userId:req.body.userId}}},{new:true}).then((response)=>{     // this fn to store request in other user 
+  
+
+  USERS.findOneAndUpdate({_id:req.body.userId},{$push:{connectionReqSend:{userId:req.body.reqUserId}}},{new:true})   .then((response)=>{
+    console.log(response);
+    res.status(200).json({update:true})
+  }).catch((error)=>{
+         console.log(error)  
+    res.json({loadError:true, message:error+"1"});
+  
+      })
+  
+  // this is to store sent connection reqs on requewst sender database 
+ })
+}
+catch(error){
+  console.log(error);
+       res.json({loadError:true,message:"Some thing went wrong please try again "})
+}
+}
+const acceptConnectionReq=(req,res)=>{
+// incomming req.bdy conatains 
+//                       {
+//                         userId: '638824cc739403a46874f5d2',
+//                         reqUser: '6388261a739403a46874f5fd'
+//                       }
+                    
+                    
+try{
+
+  USERS.findOneAndUpdate({_id:req.body.userId},{$push:{connections:{userId:req.body.reqUser}},$pull:{connectionReq:{userId:req.body.reqUser}}},{new:true}) // to update connection list of current user
+  USERS.findOneAndUpdate({_id:req.body.reqUser},{$push:{connections:{userId:req.body.userId}},$pull:{connectionReq:{userId:req.body.userId}}},{new:true}) // to update id on req sent user connection  array  
+  .then((response)=>{
+    console.log(response,"respnse after updatinf the dataa ********************2");
+    res.status(200).json({update:true})
+  }).catch((error)=>{
+         console.log(error)  
+    res.json({loadError:true, message:error+"1"});
+  
+      })            
+
+}
+catch(error){
+  console.log(error);
+       res.json({loadError:true,message:"Some thing went wrong please try again "})
+
+}
+}
+
+const declineConnectionReq=async (req,res)=>{
+// incomming req.bdy conatains 
+                    //  {
+                    //    userId: '6388261a739403a46874f5fd',
+                    //    reqUser: '638824cc739403a46874f5d2'
+                    //  }
+  try{
+
+await USERS.findOneAndUpdate({_id:req.body.userId},{$pull:{connectionReq:{userId:req.body.reqUser}}},{new:true})
+USERS.findOneAndUpdate({_id:req.body.reqUser},{$pull:{connectionReqSend:{userId:req.body.userId}}})
+.then((response)=>{
+  res.status(200).json({update:true})
+}).catch((error)=>{
+       console.log(error)  
+  res.json({loadError:true, message:error+"1"});
+
+    }) 
+  }catch(error){
+  console.log(error);
+       res.json({loadError:true,message:"Some thing went wrong please try again "})
+
+}
+}
 
 module.exports = {
     doSignup,
@@ -822,7 +981,14 @@ module.exports = {
     updateSingleJobPostData,
     getDataForDetailedJobPostView,
     applyForAJob,
-    getCandidateDataOfJobApplied
+    getCandidateDataOfJobApplied,
+    getUserData,
+    getConnectionSuggestionData,
+    getConnectionRequestData,
+    sendConnectionReq,
+    acceptConnectionReq,
+    declineConnectionReq,
+    
 
 
 

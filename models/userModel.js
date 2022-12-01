@@ -16,6 +16,36 @@ const userSchema=mongoose.Schema(
             experience:[ ],
             skills:[],
             resume:String,
+            connections:[{
+                userId: {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: "users"
+                          },
+              
+                 timeStamp:{type:Date,
+                            default:new Date()},   
+            }],
+            connectionReq:[{
+                userId: {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: "users"
+                          },
+              
+                timeStamp:{type:Date,
+                default:new Date()},   
+            }],
+
+            connectionReqSend:[{
+                userId: {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: "users"
+                          },
+              
+                timeStamp:{type:Date,
+                        default:new Date()},   
+            }],
+
+
 
         });
         const users=   mongoose.model('users', userSchema); 
@@ -36,7 +66,8 @@ const userSchema=mongoose.Schema(
                     comment:[{
                         commentedBy:{
                             type: mongoose.Schema.Types.ObjectId,
-                            ref: "users"
+                            ref: "users",
+                          
                                    },
                       commentText:String,
                       timeStamp:Date,
