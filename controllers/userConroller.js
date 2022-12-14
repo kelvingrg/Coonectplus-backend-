@@ -5,6 +5,7 @@ const USERS = require('../models/userModel').users
 const POSTS = require('../models/userModel').posts
 const VERIFY_EMAIL = require('../models/userModel').verifyEamil
 const JOB_POST = require('../models/userModel').jobPost
+const NOTIFICATION = require('../models/userModel').notification
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
 const multer = require('multer')
@@ -13,6 +14,46 @@ const moment= require('moment');
 const nodemailer = require('nodemailer');
 const { timeStamp } = require('console');
 var objectId = require("mongodb").ObjectId;
+const chatModel = require('../models/chatModel')
+
+
+
+async function addNewNotification(userId,notificationType,respectedUserId){
+  try{
+  console.log(userId,notificationType,respectedUserId);
+
+   const userNotification= await NOTIFICATION.find({userId:userId}).count()
+   console.log(userNotification)
+ 
+   if(userNotification){
+    const notificationData={
+      respectedUserId:objectId(respectedUserId),
+      notificationType:notificationType,
+      }
+await  NOTIFICATION.findOneAndUpdate({userId:userId},{$push:{notification:notificationData}},{upsert:true},(err)=>{console.log(err, "err after adnew comment ");}).clone() 
+
+console.log("recheed inside add new" )
+
+ }
+ else{
+  NOTIFICATION({
+    userId:objectId(userId),
+    notification:[
+     { notificationType:notificationType,
+      respectedUserId:respectedUserId,
+    
+    }
+    ]
+  
+  }).save()
+ }
+
+
+  }
+  catch(err){
+    console.log(err);
+  }
+}
 
 
 
@@ -199,7 +240,7 @@ const changeProfileDp = (req,res)=>{
   const userAboutSessionUpdate=(req,res)=>{
     try{
     // console.log('reached inside userAboutSessionUpdate',req.query);
-    USERS.findByIdAndUpdate({_id:req.query.userId},{about:req.query.data},{upsert:true})
+    USERS.findByIdAndUpdate({_id:req.query.userId},{about:req.query.data},{upsert:true},{new:true})
     .then(async(response)=>{
       const userdata= await USERS.find({_id:req.query.userId})
    
@@ -211,7 +252,7 @@ const changeProfileDp = (req,res)=>{
     catch(error){
 res.status(500).json({loadError:true,error:err})
     }
-  }  
+}  
 
 const userExperienceUpdate =(req,res)=>{
     try{
@@ -283,7 +324,7 @@ const addNewPost=(req,res)=>{
       console.log(error);
       res.json({loadError:true,message:"Some thing went wrong please try again "})
     }
-  };
+};
   const getCasualPostData=(req,res)=>{
     try{
     POSTS.find({}).populate("postedBy").sort({timeStamp:-1})
@@ -298,14 +339,14 @@ const addNewPost=(req,res)=>{
     console.log(error);
     res.json({loadError:true,message:"Some thing went wrong please try again "})
   }
-  }
+}
 
 const updateLike =(req,res)=>{
-
 // req.query will like this 
 //   {
 //     userId: '63690c00b7157f1186735aa7',
 //     postId: '6376944df7012f1fdbf8cd1d'
+//      postedById: '638824cc739403a46874f5d2'
 //   }
 
 try{
@@ -318,15 +359,22 @@ try{
                 
             )
             .then(()=>{
+              addNewNotification(
+                req.query.postedById ,                // action made for user id 
+                   "like"    ,           //notificationType,
+                req.query.userId              //respectedUserId-action made by user id
+                 )
               POSTS.findById(req.query.postId ).then((response)=>{
+             
                 res.status(200).json({update:true,singlePostData:response})
-              }).catch((error)=>{
                
+              }).catch((error)=>{
+               console.log(error);
                 res.json({loadError:true, message:error});
               })
           
         }).catch((error)=>{
-        
+          console.log(error);
           res.json({loadError:true, message:error}); 
               })
               
@@ -370,7 +418,7 @@ catch(error){
 
 const addNewComment = async(req,res)=>{
   try{
-// console.log("reached at addNewComment backend ",req.query)  
+ console.log("reached at addNewComment backend --------3333",req.query)  
 const commentData={
   commentedBy:req?.query?.userId,
   commentText:req?.query?.commentText,
@@ -380,14 +428,23 @@ const commentData={
   keyrole:req?.query?.keyrole
 }      
   
-await POSTS.findByIdAndUpdate(req.query.postId, { $addToSet: { comment: commentData  }},{new:true},(err)=>{console.log(err)}).clone()
+await POSTS.findByIdAndUpdate(req.query.postId, { $addToSet: { comment: commentData  }},(err)=>{console.log(err)}).clone()
 
+  POSTS.findById(req.query.postId ).sort({timeStamp:1}).then((response)=>{
 
-  POSTS.findById(req.query.postId ).sort({timeStamp:1}).clone().then((response)=>{
+    POSTS.find({_id:req.query.postId}).then(response=>{
+      console.log(response);
+      addNewNotification(
+        response[0].postedBy,                // action made for user id 
+           "comment"    ,           //notificationType,
+           req?.query?.userId,             //respectedUserId-action made by user id
+         )
+    })
+  
     res.status(200).json({upload:true,singlePostData:response})
   }).catch((error)=>{
          console.log(error)  
-    res.json({loadError:true, message:error+"1"});
+   res.json({loadError:true, message:error+"1"});
   })
 
 
@@ -395,7 +452,7 @@ await POSTS.findByIdAndUpdate(req.query.postId, { $addToSet: { comment: commentD
 }
 catch(err){
   console.log(err);
-  res.json({loadError:true,message:"Some thing went wrong please try again "})
+   res.json({loadError:true,message:"Some thing went wrong please try again "})
 }
 
 }
@@ -645,7 +702,6 @@ JOB_POST.findOneAndDelete({_id:req.query.postId})
   }
 }
 
-
 const updateSingleJobPostData=(req,res)=>{
   console.log(req.query,"req.query t updaTE JOB POST ")
 try{
@@ -755,6 +811,15 @@ try{
   }
   JOB_POST.updateOne({_id:req.body.jobPostId},{$addToSet:{appliedCandidates:jobApplication}},{new:true},(err)=>{console.log(err)}).clone()
   .then((response)=>{
+JOB_POST.find({_id:req.body.jobPostId}).then((response)=>{
+  addNewNotification(
+    response[0].userId,                // action made for user id 
+       "jobApplied"    ,           //notificationType,
+       req.body.userId,             //respectedUserId-action made by user id
+     )
+
+})
+   
     res.status(200).json({jobApply:true})
   }).catch((error)=>{
          console.log(error)  
@@ -774,7 +839,8 @@ const getCandidateDataOfJobApplied=(req,res)=>{
   // sample data input
   // { postId: '638103cacde597280f1806f8' } 
   try{
-JOB_POST.findById(req.query.postId)
+    console.log(req.query,"getCandidateDataOfJobApplied");
+JOB_POST.findById(req?.query?.postId)
 .populate({
   path: 'appliedCandidates',
   populate: {
@@ -782,6 +848,7 @@ JOB_POST.findById(req.query.postId)
   },
 })
 .then((response)=>{
+
   res.status(200).json({dataFetched:true,response})
 }).catch((error)=>{
        console.log(error)  
@@ -798,7 +865,7 @@ JOB_POST.findById(req.query.postId)
 const getUserData=(req,res)=>{
   try{
 
-  USERS.find({_id:req.body.userId},'-password')
+  USERS.find({_id:req.body.userId},'-password -connectionReq -connectionReqSend ')
   .then((response)=>{
     res.status(200).json({dataFetched:true,response})
   }).catch((error)=>{
@@ -888,6 +955,13 @@ try{
 
   USERS.findOneAndUpdate({_id:req.body.userId},{$push:{connectionReqSend:{userId:req.body.reqUserId}}},{new:true})   .then((response)=>{
     console.log(response);
+
+    addNewNotification(
+      req.body.reqUserId,                // action made for user id 
+         "connectionReq"    ,           //notificationType,
+         req.body.userId,             //respectedUserId-action made by user id
+       )
+
     res.status(200).json({update:true})
   }).catch((error)=>{
          console.log(error)  
@@ -903,7 +977,7 @@ catch(error){
        res.json({loadError:true,message:"Some thing went wrong please try again "})
 }
 }
-const acceptConnectionReq=(req,res)=>{
+const acceptConnectionReq= async (req,res)=>{
 // incomming req.bdy conatains 
 //                       {
 //                         userId: '638824cc739403a46874f5d2',
@@ -913,10 +987,30 @@ const acceptConnectionReq=(req,res)=>{
                     
 try{
 
-  USERS.findOneAndUpdate({_id:req.body.userId},{$push:{connections:{userId:req.body.reqUser}},$pull:{connectionReq:{userId:req.body.reqUser}}},{new:true}) // to update connection list of current user
+await USERS.findOneAndUpdate({_id:req.body.userId},{$push:{connections:{userId:req.body.reqUser}},$pull:{connectionReq:{userId:req.body.reqUser}}},{new:true})  //.then((response)=>{console.log(response ,"after datat update ");}) // to update connection list of current user
   USERS.findOneAndUpdate({_id:req.body.reqUser},{$push:{connections:{userId:req.body.userId}},$pull:{connectionReq:{userId:req.body.userId}}},{new:true}) // to update id on req sent user connection  array  
-  .then((response)=>{
-    console.log(response,"respnse after updatinf the dataa ********************2");
+  .then(async (response)=>{
+
+    // adding  notification starts 
+    addNewNotification(
+      req.body.reqUser,                // action made for user id 
+         "connectionAccept"    ,           //notificationType,
+         req.body.userId,             //respectedUserId-action made by user id
+       )
+       // adding  notification end s 
+
+
+//addding new chat starts
+const newChat = new chatModel({
+  members: [req.body.userId, req.body.reqUser]
+})
+
+  const result = await newChat.save();
+
+//addding new chat ends  
+
+       
+
     res.status(200).json({update:true})
   }).catch((error)=>{
          console.log(error)  
@@ -956,6 +1050,139 @@ USERS.findOneAndUpdate({_id:req.body.reqUser},{$pull:{connectionReqSend:{userId:
 }
 }
 
+const notifications=async (req,res)=>{
+  try{
+    // await NOTIFICATION.updateMany({userId:req.query.userId,"notification.open":false},{$set:{'notification.$.open':true}},{multi:true}).then((response)=>{console.log(response,"response 7777777777777777777777777")})
+ NOTIFICATION.find({userId:req.query.userId,"notification.open":false},"notification")
+.then((response)=>{
+  response[0]?.notification?.forEach((data)=>{
+    NOTIFICATION.updateMany({userId:req.query.userId,"notification.open":false},{$set:{'notification.$.open':true}},{multi:true}).then((response)=>{
+    })
+  })
+  
+})
+  NOTIFICATION.find({userId:req.query.userId})
+  .populate({
+    path:'notification',
+    populate:{
+      path:'respectedUserId',
+      select:[ '_id', 'userName','currentDesignation' ,'dp '],
+    }
+    
+  })
+  .then((response)=>{
+
+    res.status(200).json({dataFetched:true,data:response[0]})
+  }).catch((error)=>{
+         console.log(error)  
+     res.json({loadError:true, message:error});
+  
+      })      
+    }
+    catch(error){
+      console.log(error);
+           res.json({loadError:true,message:"Some thing went wrong please try again "})
+    }
+  
+}
+
+const connectedUsersData=(req,res)=>{
+  // console.log(req.query,"data input at connected users data  connectedUsersData");
+try{
+  USERS.find({_id:req.query.userId},'connections')
+  .populate({
+    path:'connections',
+    populate:{
+      path:'userId',
+      select:[ '_id', 'userName','currentDesignation' ,'dp'],
+    }
+    
+  })
+  .then((response)=>{
+    // console.log(response[0]);
+ res.status(200).json({dataFetched:true,data:response[0]})
+  }).catch((error)=>{
+         console.log(error)  
+     res.json({loadError:true, message:error});
+  
+      })      
+
+}
+catch(error){
+  console.log(error);
+       res.json({loadError:true,message:error+"Some thing went wrong please try again "})
+}
+}
+
+const notificationCount= (req,res)=>{
+  // console.log(req.query,"notificationCount  notificationCount");
+  // { userId: '638824cc739403a46874f5d2' } 
+  try{
+
+  NOTIFICATION.aggregate([
+    {
+      $match:{userId:objectId(req.query.userId)},
+    },
+    {
+      $unwind:"$notification"
+    },
+    { 
+      $group:{_id:{notification:'$notification.open'}, count: { $sum: 1 }}
+    },
+    {
+      $match:{'_id.notification':false},
+    },
+ 
+]) .then(async(response)=>{
+
+//  let connectionReqNo= await USERS.find({_id:req.query.userId},"connectionReq")
+//    console.log(response[0]?.count? response[0]?.count : 0,connectionReqNo[0]?.connectionReq?.length,"response after notification count  fetch ");
+res.status(200).json({dataFetched:true,notification:response[0]?.count?response[0]?.count:0 ,connectionReq:response[0]?.connectionReq?.length})
+}).catch((error)=>{
+       console.log(error)  
+   res.json({loadError:true, message:error});
+
+    })      
+
+}
+catch(error){
+console.log(error);
+     res.json({loadError:true,message:error+"Some thing went wrong please try again "})
+}
+}
+
+const profileBoxData =async(req,res)=>{
+  try {
+   const jobPostDetails=await JOB_POST.find({postedBy:req.query.userId},'_id')
+   const postDetails = await POSTS.find({userId:req.query.userId},'_id')
+
+    res.status(200).json({dataFetched:true,jobPost:jobPostDetails?.length ,postDetails:postDetails?.length})
+  } catch (error) {
+    console.log(error);
+     res.json({loadError:true,message:error+"Some thing went wrong please try again "})
+  }
+}
+const getOwnCasualPostData=(req,res)=>{
+  try{
+    
+  POSTS.find({postedBy:req.query.userId}).populate("postedBy").sort({timeStamp:-1})
+  .then((response)=>{
+    console.log('====================================');
+    console.log(response);
+    console.log('====================================');
+    res.status(200).json({dataFetched:true,data:response});})
+  .catch((error) => {
+    console.log(error)
+    res.json({loadError:true, message:error});
+  });
+}
+catch(error){
+  console.log(error);
+  res.json({loadError:true,message:"Some thing went wrong please try again "})
+}
+}
+
+
 module.exports = {
     doSignup,
     doLogin,
@@ -988,11 +1215,10 @@ module.exports = {
     sendConnectionReq,
     acceptConnectionReq,
     declineConnectionReq,
-    
-
-
-
-
-
+    notifications,
+    connectedUsersData,
+    notificationCount,
+    profileBoxData,
+    getOwnCasualPostData,
 
 }

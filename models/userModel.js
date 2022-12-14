@@ -16,6 +16,8 @@ const userSchema=mongoose.Schema(
             experience:[ ],
             skills:[],
             resume:String,
+            isBlock:{type:Boolean,
+                default:false},
             connections:[{
                 userId: {
                     type: mongoose.Schema.Types.ObjectId,
@@ -23,7 +25,7 @@ const userSchema=mongoose.Schema(
                           },
               
                  timeStamp:{type:Date,
-                            default:new Date()},   
+                            default:new Date()},                
             }],
             connectionReq:[{
                 userId: {
@@ -44,6 +46,8 @@ const userSchema=mongoose.Schema(
                 timeStamp:{type:Date,
                         default:new Date()},   
             }],
+
+          
 
 
 
@@ -78,7 +82,12 @@ const userSchema=mongoose.Schema(
 
 
                             }
-                          ],           
+                          ],   
+                          isBlock:{type:Boolean,
+                            default:false},
+                            reports:[{userId: {type: mongoose.Schema.Types.ObjectId,
+                                ref: "users"},
+                            }]        
 
                     
         
@@ -87,12 +96,12 @@ const userSchema=mongoose.Schema(
 
                 const emailVerifySchema=mongoose.Schema(
                     {
-                           email:String,
-                           verificationCode:String,
-                           sessionActivity:    { type: Date, expires: '360s', default: Date.now },
-                
-                        
-                    });
+                        email:String,
+                        verificationCode:String,
+                        sessionActivity:    { type: Date, expires: '360s', default: Date.now },
+             
+                     
+                 });
                         const verifyEamil=   mongoose.model('verifyEmail', emailVerifySchema); 
                 
                         const jobPostSchema=mongoose.Schema(
@@ -121,11 +130,48 @@ const userSchema=mongoose.Schema(
                                               },
                                   
                                     timeStamp:Date,          
-                                  }
-                                ]
+                                  },
+                              
+
+                                ],
+                                isBlock:{type:Boolean,
+                                    default:false},
                         
                                 });
                                 const jobPost=   mongoose.model('jobPost', jobPostSchema); 
+
+
+
+                         
+                
+                                const notificationSchema=mongoose.Schema(
+                                    {
+                                        userId:{
+                                            type: mongoose.Schema.Types.ObjectId,
+                                            ref: "users"
+                                                   },
+                                       
+                                        notification:[
+                                            { content:String,
+                                            timeStamp:{type:Date,
+                                                default:new Date()}, 
+                                                notificationType: { type: String,required:true },
+                                                respectedUserId: {
+                                                    type: mongoose.Schema.Types.ObjectId,
+                                                    ref: "users"
+                                                } ,
+                                                view:{
+                                                    type: Boolean,
+                                                    default:false
+                                                }, 
+                                                open:{
+                                                    type: Boolean,
+                                                    default:false
+                                                }, 
+                                        
+                                           } ]
+                                    })
+                                        const notification =   mongoose.model('notification', notificationSchema); 
 
 
 
@@ -134,6 +180,7 @@ const userSchema=mongoose.Schema(
             posts,
             verifyEamil,
             jobPost,
+            notification
          
         
         }

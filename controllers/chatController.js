@@ -3,6 +3,7 @@ const messageModel =require('../models/messageModel')
 
 
 const createChat = async (req, res) => {
+  
     const newChat = new chatModel({
         members: [req.body.senderId, req.body.receiverId]
     })

@@ -33,6 +33,11 @@ const {doSignup,
     sendConnectionReq,
     acceptConnectionReq,
     declineConnectionReq,
+    notifications,
+    connectedUsersData,
+    notificationCount,
+    profileBoxData,
+    getOwnCasualPostData
 
     
 
@@ -106,6 +111,16 @@ router.post('/sendConnectionReq',verifyToken,sendConnectionReq)
 router.post('/acceptConnectionReq',verifyToken,acceptConnectionReq)
 
 router.post('/declineConnectionReq',verifyToken,declineConnectionReq)
+
+router.get('/notifications',verifyToken ,notifications)
+
+router.get('/connectedUsersData',verifyToken ,connectedUsersData)
+
+router.get('/notificationCount',verifyToken ,notificationCount)
+
+router.get('/profileBoxData',verifyToken ,profileBoxData)
+
+router.get('/getOwnCasualPostData',verifyToken ,getOwnCasualPostData)
 
 
 // router.get('/testrouter',(req, res, next)=>{UserAboutSessionUpdate
