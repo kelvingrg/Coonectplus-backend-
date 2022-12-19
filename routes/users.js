@@ -37,7 +37,8 @@ const {doSignup,
     connectedUsersData,
     notificationCount,
     profileBoxData,
-    getOwnCasualPostData
+    getOwnCasualPostData,
+    getSearchResult
 
     
 
@@ -121,6 +122,8 @@ router.get('/notificationCount',verifyToken ,notificationCount)
 router.get('/profileBoxData',verifyToken ,profileBoxData)
 
 router.get('/getOwnCasualPostData',verifyToken ,getOwnCasualPostData)
+
+router.get('/getSearchResult',verifyToken ,getSearchResult)
 
 
 // router.get('/testrouter',(req, res, next)=>{UserAboutSessionUpdate

@@ -428,7 +428,7 @@ const commentData={
   keyrole:req?.query?.keyrole
 }      
   
-await POSTS.findByIdAndUpdate(req.query.postId, { $addToSet: { comment: commentData  }},(err)=>{console.log(err)}).clone()
+await POSTS.findByIdAndUpdate(req.query.postId, { $addToSet: { comment: commentData  }})
 
   POSTS.findById(req.query.postId ).sort({timeStamp:1}).then((response)=>{
 
@@ -950,11 +950,13 @@ const sendConnectionReq = (req,res)=>{
   console.log(req.body);
 try{
 
-  USERS.findOneAndUpdate({_id:req.body.reqUserId},{$push:{connectionReq:{userId:req.body.userId}}},{new:true}).then((response)=>{     // this fn to store request in other user 
+  USERS.findOneAndUpdate({_id:req.body.reqUserId},{$push:{connectionReq:{userId:req.body.userId}}},{new:true}).then((
+
+  )=>{     // this fn to store request in other user 
   
 
-  USERS.findOneAndUpdate({_id:req.body.userId},{$push:{connectionReqSend:{userId:req.body.reqUserId}}},{new:true})   .then((response)=>{
-    console.log(response);
+  USERS.findOneAndUpdate({_id:req.body.userId},{$push:{connectionReqSend:{userId:req.body.reqUserId}}},{new:true}) .then((userData)=>{
+
 
     addNewNotification(
       req.body.reqUserId,                // action made for user id 
@@ -962,7 +964,7 @@ try{
          req.body.userId,             //respectedUserId-action made by user id
        )
 
-    res.status(200).json({update:true})
+    res.status(200).json({update:true, data:userData})
   }).catch((error)=>{
          console.log(error)  
     res.json({loadError:true, message:error+"1"});
@@ -987,7 +989,7 @@ const acceptConnectionReq= async (req,res)=>{
                     
 try{
 
-await USERS.findOneAndUpdate({_id:req.body.userId},{$push:{connections:{userId:req.body.reqUser}},$pull:{connectionReq:{userId:req.body.reqUser}}},{new:true})  //.then((response)=>{console.log(response ,"after datat update ");}) // to update connection list of current user
+const userData=await USERS.findOneAndUpdate({_id:req.body.userId},{$push:{connections:{userId:req.body.reqUser}},$pull:{connectionReq:{userId:req.body.reqUser}}},{new:true})  //.then((response)=>{console.log(response ,"after datat update ");}) // to update connection list of current user
   USERS.findOneAndUpdate({_id:req.body.reqUser},{$push:{connections:{userId:req.body.userId}},$pull:{connectionReq:{userId:req.body.userId}}},{new:true}) // to update id on req sent user connection  array  
   .then(async (response)=>{
 
@@ -1011,7 +1013,7 @@ const newChat = new chatModel({
 
        
 
-    res.status(200).json({update:true})
+    res.status(200).json({update:true, data:userData})
   }).catch((error)=>{
          console.log(error)  
     res.json({loadError:true, message:error+"1"});
@@ -1167,14 +1169,56 @@ const getOwnCasualPostData=(req,res)=>{
     
   POSTS.find({postedBy:req.query.userId}).populate("postedBy").sort({timeStamp:-1})
   .then((response)=>{
-    console.log('====================================');
-    console.log(response);
-    console.log('====================================');
+
     res.status(200).json({dataFetched:true,data:response});})
   .catch((error) => {
     console.log(error)
     res.json({loadError:true, message:error});
   });
+}
+catch(error){
+  console.log(error);
+  res.json({loadError:true,message:"Some thing went wrong please try again "})
+}
+}
+
+const getSearchResult=(req,res)=>{
+  try{
+    console.log(req.query)
+    if(req.query.searchFor==="people"){
+      USERS.find({$and:[{$or:[{userName:{$regex:req.query.searchInput,$options:'xi' }},
+      {currentCompanyName:{$regex:req.query.searchInput,$options:'xi' }},
+      {keyrole:{$elemMatch:{$regex:req.query.searchInput,$options:'xi' }}},
+      {skills:{$elemMatch:{$regex:req.query.searchInput,$options:'xi' }}}]},{_id:{$ne:req.query.userId}}]},'-password -experience -skills -connections -connectionReq -connectionReqSend -timeStamp -isBlock -about')
+
+      .then((response)=>{
+        console.log(response,"*******search responaew")
+
+    res.status(200).json({dataFetched:true,data:response})})
+  .catch((error) => {
+    console.log(error)
+    res.json({loadError:true, message:error});
+   });
+    }
+    else if(req.query.searchFor==="jobs"){
+      JOB_POST.find({$and:[{$or:[{companyName:{$regex:req.query.searchInput,$options:'xi' }},
+      {designation:{$regex:req.query.searchInput,$options:'xi' }},
+      {workLocation:{$regex:req.query.searchInput,$options:'xi' }},
+      {workType:{$regex:req.query.searchInput,$options:'xi' }},
+      {workMode:{$regex:req.query.searchInput,$options:'xi' }}]},
+      {isBlock:false}]}, -'overView -jd -appliedCandidates -authorisationReq -isBlock')
+
+      .then((response)=>{
+        console.log(response,"*******search responaew")
+
+    res.status(200).json({dataFetched:true,data:response})})
+  .catch((error) => {
+    console.log(error)
+    res.json({loadError:true, message:error});
+   });
+    }
+ 
+
 }
 catch(error){
   console.log(error);
@@ -1220,5 +1264,7 @@ module.exports = {
     notificationCount,
     profileBoxData,
     getOwnCasualPostData,
+    getSearchResult,
+
 
 }
