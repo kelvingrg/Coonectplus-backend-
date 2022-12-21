@@ -1,5 +1,6 @@
 var express = require('express');
 var router = express.Router();
+var {adminVerify}=require('../middleWares/middleWares')
 const {
   adminLogin,
   getUsersData,
@@ -20,27 +21,27 @@ const {
 /* GET users listing. */
 router.post('/login',adminLogin)
 
-router.get('/getUsersData',getUsersData)
+router.get('/getUsersData',adminVerify,getUsersData)
 
-router.post('/blockUser',blockUser)
+router.post('/blockUser',adminVerify,blockUser)
 
-router.post('/unBlockUser',unBlockUser)
+router.post('/unBlockUser',adminVerify,unBlockUser)
 
-router.get('/jobPostData',jobPostData)
+router.get('/jobPostData',adminVerify,jobPostData)
 
-router.post('/blockJobPost',blockJobPost)
+router.post('/blockJobPost',adminVerify,blockJobPost)
 
-router.post('/unBlockJobPost',unBlockJobPost)
+router.post('/unBlockJobPost',adminVerify,unBlockJobPost)
 
-router.post('/deleteJobPost',deleteJobPost)
+router.post('/deleteJobPost',adminVerify,deleteJobPost)
 
-router.get('/casualPostData',casualPostData)
+router.get('/casualPostData',adminVerify,casualPostData)
 
-router.post('/blockPost',blockPost)
+router.post('/blockPost',adminVerify,blockPost)
 
-router.post('/unBlockPost',unBlockPost)
+router.post('/unBlockPost',adminVerify,unBlockPost)
 
-router.post('/deletePost',deletePost)
+router.post('/deletePost',adminVerify,deletePost)
               
 module.exports = router;
                

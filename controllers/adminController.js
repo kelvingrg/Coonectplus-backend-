@@ -20,9 +20,9 @@ const adminLogin = async(req,res)=>{
             if (isMatch) {
                 const adminToken = jwt.sign({
                  _id: adminData._id
-                }, process.env.JWT_PRIVATEKEY, {expiresIn: "7d"})
+                }, process.env.JWT_ADMIN_PRIVATEKEY, {expiresIn: "7d"})
                 console.log("success login");
-                res.status(200).json({login: true, adminToken: adminToken})
+                res.status(200).json({login: true, adminToken: adminToken,adminData:adminData})
             } else {
                 res.json({login: false})
             }

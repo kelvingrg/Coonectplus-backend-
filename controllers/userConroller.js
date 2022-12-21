@@ -121,10 +121,13 @@ const doLogin = (req, res) => {
                      _id: userData._id
                     }, process.env.JWT_PRIVATEKEY, {expiresIn: "7d"})
                     console.log("success");
-
-                    console.log("inside success");
                     userData.password=null
-                    res.status(200).json({login: true, userData, token: token})
+                    if(userData[0].isBlock){
+                      res.status(200).json({blocked: true})
+                    }else{
+                      res.status(200).json({login: true, userData, token: token})
+                    }
+                   
 
 
                 } else {
@@ -1192,8 +1195,6 @@ const getSearchResult=(req,res)=>{
       {skills:{$elemMatch:{$regex:req.query.searchInput,$options:'xi' }}}]},{_id:{$ne:req.query.userId}}]},'-password -experience -skills -connections -connectionReq -connectionReqSend -timeStamp -isBlock -about')
 
       .then((response)=>{
-        console.log(response,"*******search responaew")
-
     res.status(200).json({dataFetched:true,data:response})})
   .catch((error) => {
     console.log(error)
@@ -1209,7 +1210,7 @@ const getSearchResult=(req,res)=>{
       {isBlock:false}]}, -'overView -jd -appliedCandidates -authorisationReq -isBlock')
 
       .then((response)=>{
-        console.log(response,"*******search responaew")
+        console.log(response,"*******search responaew22222")
 
     res.status(200).json({dataFetched:true,data:response})})
   .catch((error) => {
